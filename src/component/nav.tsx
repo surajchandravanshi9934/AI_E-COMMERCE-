@@ -103,7 +103,7 @@ useEffect(() => {
           <motion.div whileHover={{ rotate: 10, scale: 1.1 }}>
             <Image src={logo} alt="Logo" width={40} height={40} className="rounded-full" />
           </motion.div>
-          <span className="text-xl font-semibold hidden sm:inline">MultiCart</span>
+          <span className="text-xl font-semibold hidden sm:inline">MegaMart</span>
         </div>
 
         {/* Desktop Links */}

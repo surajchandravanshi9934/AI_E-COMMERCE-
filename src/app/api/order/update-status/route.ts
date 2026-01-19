@@ -36,7 +36,6 @@ export async function POST(req: NextRequest) {
       }
 
       await sendDeliveryOtpEmail(email, otp);
-
       return NextResponse.json({ message: "OTP sent to buyer email" });
     }
 

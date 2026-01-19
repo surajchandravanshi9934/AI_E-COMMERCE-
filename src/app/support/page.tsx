@@ -68,13 +68,22 @@ export default function SupportPage() {
   }, [messages]);
 
   /* ================= FETCH AI SUGGESTIONS (BUTTON) ================= */
+  useEffect(() => {
+    if (!messages.length || !activeUser || !userData?.role) return;
+
+    const lastMessage = messages[messages.length - 1];
+
+    if (String(lastMessage.sender) === String(myId)) return;
+
+    fetchSuggestions();
+  }, [messages]);
+
   const fetchSuggestions = async () => {
     if (!messages.length || !activeUser || !userData?.role) return;
 
     const lastMessage = messages[messages.length - 1];
 
-    // Don't generate if last message is mine
-    if (String(lastMessage.sender) === String(myId)) return;
+    console.log("🔥 Button triggered AI suggestions");
 
     setLoadingSuggestions(true);
 
@@ -87,7 +96,7 @@ export default function SupportPage() {
 
       setSuggestions(res.data.suggestions || []);
     } catch (err) {
-      setSuggestions([]);
+      console.error("AXIOS ERROR:", err);
     } finally {
       setLoadingSuggestions(false);
     }
@@ -118,7 +127,6 @@ export default function SupportPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-black to-gray-900 p-3 sm:p-6">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4 h-[90vh]">
-
         {/* ================= LEFT PANEL ================= */}
         <div className="bg-black/50 border border-white/10 rounded-2xl p-4 overflow-y-auto">
           <h2 className="text-white font-semibold mb-4 text-lg">
@@ -126,9 +134,7 @@ export default function SupportPage() {
           </h2>
 
           {users.length === 0 && (
-            <p className="text-gray-400 text-sm text-center">
-              No active chats
-            </p>
+            <p className="text-gray-400 text-sm text-center">No active chats</p>
           )}
 
           <div className="space-y-3">
@@ -174,7 +180,6 @@ export default function SupportPage() {
 
         {/* ================= RIGHT PANEL ================= */}
         <div className="md:col-span-2 bg-black/50 border border-white/10 rounded-2xl flex flex-col overflow-hidden">
-
           {!activeUser ? (
             <div className="flex-1 flex items-center justify-center text-gray-400">
               Select a chat to start conversation
@@ -243,15 +248,16 @@ export default function SupportPage() {
               </div>
 
               {/* ================= AI BUTTON ================= */}
-              <div className="px-4 pb-2">
+              <div className="px-4 pb-2 pointer-events-auto">
                 <button
+                  type="button"
                   onClick={fetchSuggestions}
                   disabled={loadingSuggestions}
-                  className="text-xs px-4 py-1.5 rounded-full
-                    bg-purple-600/20 text-purple-300
-                    border border-purple-500/30
-                    hover:bg-purple-600/30
-                    disabled:opacity-50 transition z-50"
+                  className="relative z-[9999] text-xs px-4 py-1.5 rounded-full
+        bg-purple-600/20 text-purple-300
+        border border-purple-500/30
+        hover:bg-purple-600/30
+        disabled:opacity-50 transition"
                 >
                   {loadingSuggestions ? "Generating..." : "Get AI Suggestions"}
                 </button>
@@ -263,11 +269,12 @@ export default function SupportPage() {
                   {suggestions.map((s, i) => (
                     <button
                       key={i}
+                      type="button"
                       onClick={() => setText(s)}
-                      className="text-xs px-3 py-1 rounded-full
-                        bg-blue-500/10 text-blue-300
-                        border border-blue-500/30
-                        hover:bg-blue-500/20 transition"
+                      className="relative z-[9999] text-xs px-3 py-1 rounded-full
+            bg-blue-500/10 text-blue-300
+            border border-blue-500/30
+            hover:bg-blue-500/20 transition"
                     >
                       {s}
                     </button>

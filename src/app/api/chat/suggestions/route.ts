@@ -1,104 +1,76 @@
 import { NextResponse } from "next/server";
+import { GoogleGenAI } from "@google/genai";
 
-const GEMINI_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+/* ================= GEMINI INIT ================= */
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY!,
+});
 
+/* ================= GET (Health Check – KEEP THIS) ================= */
+export async function GET() {
+  return NextResponse.json({
+    status: "OK",
+    service: "Chat Suggestions API",
+    model: "gemini-2.5-flash",
+  });
+}
+
+/* ================= POST (AI Suggestions) ================= */
 export async function POST(req: Request) {
   try {
+    console.log("🔥 Suggestions API HIT");
+
     const { message, role, targetRole } = await req.json();
 
     if (!message || !role || !targetRole) {
       return NextResponse.json({ suggestions: [] });
     }
 
-    /* ================= ROLE CONTEXT ================= */
-
     let roleContext = "";
-
-    if (role === "user" && targetRole === "vendor") {
-      roleContext = `
-You are replying as a USER.
-You are asking a vendor for help.
-Explain the issue clearly and politely.
-`;
-    }
-
-    if (role === "vendor" && targetRole === "user") {
-      roleContext = `
-You are replying as a VENDOR.
-Help the user resolve their issue professionally.
-`;
-    }
-
-    if (role === "vendor" && targetRole === "admin") {
-      roleContext = `
-You are replying as a VENDOR.
-Explain the problem clearly and ask admin for guidance.
-`;
-    }
-
-    if (role === "admin" && targetRole === "vendor") {
-      roleContext = `
-You are replying as an ADMIN.
-Either request missing information or provide a solution.
-`;
-    }
-
-    /* ================= PROMPT ================= */
+    if (role === "user" && targetRole === "vendor")
+      roleContext = "You are a USER asking a vendor politely.";
+    if (role === "vendor" && targetRole === "user")
+      roleContext = "You are a VENDOR helping a user professionally.";
+    if (role === "vendor" && targetRole === "admin")
+      roleContext = "You are a VENDOR asking an admin clearly.";
+    if (role === "admin" && targetRole === "vendor")
+      roleContext = "You are an ADMIN giving guidance.";
 
     const prompt = `
-You are a professional support assistant.
-
 ${roleContext}
 
-Last message received:
+Last message:
 "${message}"
 
 Generate 3 reply suggestions.
-
 Rules:
-- 5 to 10 words each
+- 5 to 10 words
 - Polite and professional
-- One suggestion per line
-- No bullets or numbering
+- One per line
 `;
 
-    /* ================= GEMINI URL CALL ================= */
-
-    const geminiResponse = await fetch(
-      `${GEMINI_URL}?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: prompt }],
         },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [{ text: prompt }],
-            },
-          ],
-        }),
-      }
-    );
+      ],
+    });
 
-    const data = await geminiResponse.json();
+    const rawText =
+      response?.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
-    /* ================= TEXT EXTRACTION ================= */
-
-    const text =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-    const suggestions = text
+    const suggestions = rawText
       .split("\n")
-      .map((s: string) => s.trim())
+      .map((s) => s.trim())
       .filter(Boolean)
       .slice(0, 3);
 
     return NextResponse.json({ suggestions });
-
-  } catch (error) {
-    console.error("Suggestion error:", error);
+  } catch (err) {
+    console.error("❌ Suggestion Error:", err);
     return NextResponse.json({ suggestions: [] });
   }
 }

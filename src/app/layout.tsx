@@ -11,7 +11,7 @@ import InitUser from "@/InitUser";
 
 
 export const metadata: Metadata = {
-  title: "Multi-Cart",
+  title: "MegaMart",
   description: "Multi-Vender E-Commerce Website ",
 };
 

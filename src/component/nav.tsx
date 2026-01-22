@@ -13,7 +13,6 @@ import {
   AiOutlineShop,
   AiOutlineLogin,
   AiOutlineLogout,
-  AiOutlineSolution,
 } from "react-icons/ai";
 import { GoListUnordered } from "react-icons/go";
 import { useRouter } from "next/navigation";
@@ -22,6 +21,9 @@ import logo from "@/assets/logo.jpg";
 import { signOut } from "next-auth/react";
 import mongoose from "mongoose";
 import axios from "axios";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "@/redux/store";
+import { fetchCartCount } from "@/redux/cartSlice";
 
 
 interface IUser {
@@ -60,35 +62,19 @@ interface IUser {
   createdAt?: Date;
   updatedAt?: Date;
 }
-export default function Navbar({ user }: { user: IUser }) {
+export default function Navbar({ user }: { user?: IUser | null }) {
   const [openMenu, setOpenMenu] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
-  const [cartCount, setCartCount] = useState(0);
+  /* -------------------- REDUX HOOKS -------------------- */
+  const dispatch = useDispatch<AppDispatch>();
+  const cartCount = useSelector((state: RootState) => state.cart.count);
 
-const fetchCartCount = async () => {
-  try {
-    const res = await axios.get("/api/cart/get");
-
-    if (res.status === 200) {
-      const cart = res.data?.cart || [];
-      const totalQty = cart.reduce(
-        (sum: number, item: any) => sum + item.quantity,
-        0
-      );
-
-      setCartCount(totalQty);
+  useEffect(() => {
+    if (user?.role === "user") {
+      dispatch(fetchCartCount());
     }
-  } catch (err) {
-    console.log("Navbar cart fetch error:", err);
-  }
-};
-
-useEffect(() => {
-  if (user?.role === "user") {
-    fetchCartCount();
-  }
-}, [user]);
+  }, [user, dispatch]);
 
 
   return (
@@ -107,7 +93,7 @@ useEffect(() => {
         </div>
 
         {/* Desktop Links */}
-        {user.role == "user" && <div className="hidden md:flex gap-8">
+        {user?.role == "user" && <div className="hidden md:flex gap-8">
           <NavItem label="Home" path="/" router={router} />
           <NavItem label="Categories" path="/category" router={router} />
           <NavItem label="Shop" path="/shop" router={router} />
@@ -116,30 +102,36 @@ useEffect(() => {
 
         {/* Desktop Icons */}
         <div className="hidden md:flex items-center gap-6">
-          {user?.role === "user" && <IconBtn Icon={AiOutlineSearch} onClick={() => router.push("/category")}/>}
+          {user?.role === "user" && <IconBtn Icon={AiOutlineSearch} onClick={() => router.push("/category")} />}
 
           {/* ⭐ ADDED SUPPORT ICON HERE */}
           <IconBtn Icon={AiOutlinePhone} onClick={() => router.push("/support")} />
 
           <div className="relative">
-            {user?.image ? (
-              <Image
-                src={user.image}
-                alt="user"
-                width={40}
-                height={40}
-                className="w-10 h-10 rounded-full object-cover border border-gray-700 cursor-pointer"
-                onClick={() => setOpenMenu(!openMenu)}
-              />
+            {user ? (
+              <>
+                {user.image ? (
+                  <Image
+                    src={user.image}
+                    alt="user"
+                    width={40}
+                    height={40}
+                    className="w-10 h-10 rounded-full object-cover border border-gray-700 cursor-pointer"
+                    onClick={() => setOpenMenu(!openMenu)}
+                  />
+                ) : (
+                  <IconBtn Icon={AiOutlineUser} onClick={() => setOpenMenu(!openMenu)} />
+                )}
+                <AnimatePresence>
+                  {openMenu && <ProfileDropdown router={router} close={() => setOpenMenu(false)} />}
+                </AnimatePresence>
+              </>
             ) : (
-              <IconBtn Icon={AiOutlineUser} onClick={() => setOpenMenu(!openMenu)} />
+              <IconBtn Icon={AiOutlineLogin} onClick={() => router.push("/login")} />
             )}
-            <AnimatePresence>
-              {openMenu && <ProfileDropdown router={router} close={() => setOpenMenu(false)} />}
-            </AnimatePresence>
           </div>
 
-          {user?.role === "user" && <CartBtn router={router} count={cartCount}/>}
+          {user?.role === "user" && <CartBtn router={router} count={cartCount} />}
         </div>
 
         {/* Mobile Icons */}
@@ -225,14 +217,18 @@ const CartBtn = ({ router, count }: any) => (
 
 const ProfileDropdown = ({ router, close }: any) => (
   <motion.div
-    initial={{ opacity: 0, y: -10 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -10 }}
-    className="absolute right-0 mt-3 w-48 backdrop-blur-lg rounded-xl shadow-lg border bg-[#6a69693c]"
+    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+    animate={{ opacity: 1, y: 0, scale: 1 }}
+    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+    transition={{ duration: 0.2 }}
+    className="absolute right-0 top-12 w-56 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 bg-[#0a0a0add] overflow-hidden z-50 p-2"
   >
-    <DropdownBtn Icon={AiOutlineUser} label="Profile" onClick={() => router.push("/profile")} close={close} />
-    <DropdownBtn Icon={AiOutlineLogin} label="Sign In" onClick={() => router.push("/login")} close={close} />
-    <DropdownBtn Icon={AiOutlineLogout} label="Sign Out" onClick={signOut} close={close} />
+    <div className="flex flex-col gap-1">
+      <DropdownBtn Icon={AiOutlineUser} label="Profile" onClick={() => router.push("/profile")} close={close} />
+      <DropdownBtn Icon={AiOutlineAppstore} label="My Orders" onClick={() => router.push("/orders")} close={close} />
+      <div className="h-[1px] bg-white/10 my-1 mx-2"></div>
+      <DropdownBtn Icon={AiOutlineLogout} label="Sign Out" onClick={() => signOut({ callbackUrl: "/login" })} close={close} />
+    </div>
   </motion.div>
 );
 
@@ -242,19 +238,20 @@ const DropdownBtn = ({ Icon, label, onClick, close }: any) => (
       onClick();
       close();
     }}
-    className="flex items-center gap-3 w-full px-4 py-2 hover:bg-white/10 text-left"
+    className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-200 group"
   >
-    <Icon size={18} /> {label}
+    <Icon size={18} className="text-gray-400 group-hover:text-blue-400 transition-colors" />
+    <span className="font-medium">{label}</span>
   </button>
 );
 
-const Sidebar = ({ close, router }: any) => (
+const Sidebar = ({ close, router, user }: any) => (
   <motion.div
     initial={{ x: "100%" }}
     animate={{ x: 0 }}
     exit={{ x: "100%" }}
     transition={{ type: "spring", stiffness: 200, damping: 24 }}
-    className="fixed top-0 right-0 h-screen w-[65%] bg-black/90 backdrop-blur-lg p-6 text-white"
+    className="fixed top-0 right-0 h-screen w-[65%] bg-white/90 dark:bg-black/90 backdrop-blur-lg p-6 text-black dark:text-white shadow-2xl"
   >
     <div className="flex justify-between items-center mb-6">
       <h2 className="text-xl font-semibold">Menu</h2>
@@ -271,10 +268,11 @@ const Sidebar = ({ close, router }: any) => (
 
 
       <SidebarLink Icon={AiOutlineUser} label="Profile" path="/profile" router={router} close={close} />
-      <SidebarLink Icon={AiOutlineLogin} label="Login" path="/login" router={router} close={close} />
-
-
-      <SidebarSignOut Icon={AiOutlineLogout} label="Sign Out" close={close} />
+      {!user ? (
+        <SidebarLink Icon={AiOutlineLogin} label="Login" path="/login" router={router} close={close} />
+      ) : (
+        <SidebarSignOut Icon={AiOutlineLogout} label="Sign Out" close={close} />
+      )}
     </div>
   </motion.div>
 );
@@ -285,7 +283,7 @@ const SidebarLink = ({ Icon, label, path, router, close }: any) => (
       router.push(path);
       close();
     }}
-    className="flex items-center gap-3 px-4 py-2 rounded-lg bg-[#6a69693c] hover:bg-white/10 text-left"
+    className="flex items-center gap-3 px-4 py-2 rounded-lg bg-gray-100 dark:bg-[#6a69693c] hover:bg-gray-200 dark:hover:bg-white/10 text-left transition-colors"
   >
     <Icon size={20} /> {label}
   </button>
@@ -294,10 +292,10 @@ const SidebarLink = ({ Icon, label, path, router, close }: any) => (
 const SidebarSignOut = ({ Icon, label, close }: any) => (
   <button
     onClick={() => {
-      signOut();
+      signOut({ callbackUrl: "/login" });
       close();
     }}
-    className="flex items-center gap-3 px-4 py-2 rounded-lg bg-[#6a69693c] hover:bg-white/10 text-left"
+    className="flex items-center gap-3 px-4 py-2 rounded-lg bg-gray-100 dark:bg-[#6a69693c] hover:bg-red-500 hover:text-white dark:hover:bg-white/10 text-left transition-colors"
   >
     <Icon size={20} /> {label}
   </button>

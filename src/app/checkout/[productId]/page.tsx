@@ -35,20 +35,34 @@ export default function CheckoutPage() {
 
     const loadProduct = async () => {
       try {
+        // 1. Check Cart First
         const res = await axios.get("/api/cart/get");
-        const found = res.data.cart.find(
+        const found = res.data.cart?.find(
           (i: any) => i.product._id === productId
         );
 
-        if (!found) {
-          router.replace("/cart");
+        if (found) {
+          setItem(found);
+          if (!found.product.payOnDelivery) {
+            setPaymentMode("stripe");
+          }
           return;
         }
 
-        setItem(found);
-        if (!found.product.payOnDelivery) {
-          setPaymentMode("stripe");
+        // 2. If not in cart, fetch product details directly (Direct Buy)
+        const prodRes = await axios.get("/api/product/all-products-data");
+        const product = prodRes.data?.find((p: any) => p._id === productId);
+
+        if (product) {
+          setItem({ product, quantity: 1 });
+          if (!product.payOnDelivery) {
+            setPaymentMode("stripe");
+          }
+        } else {
+          console.error("Product not found");
+          router.replace("/");
         }
+
       } catch (err) {
         console.error(err);
       } finally {
@@ -124,7 +138,7 @@ export default function CheckoutPage() {
           <input className="w-full p-3 rounded-xl bg-black/60 border border-white/20
              text-white placeholder-gray-400
              focus:outline-none focus:ring-2 focus:ring-blue-500
-             hover:border-white/40 transition" placeholder="Full Name" value={name} onChange={e => setName(e.target.value)}  />
+             hover:border-white/40 transition" placeholder="Full Name" value={name} onChange={e => setName(e.target.value)} />
           <input className="w-full p-3 rounded-xl bg-black/60 border border-white/20
              text-white placeholder-gray-400
              focus:outline-none focus:ring-2 focus:ring-blue-500
@@ -198,22 +212,20 @@ export default function CheckoutPage() {
               <button
                 disabled={codDisabled}
                 onClick={() => setPaymentMode("cod")}
-                className={`flex-1 py-3 rounded-xl font-semibold transition ${
-                  paymentMode === "cod"
+                className={`flex-1 py-3 rounded-xl font-semibold transition ${paymentMode === "cod"
                     ? "bg-blue-600"
                     : "bg-white/10"
-                } ${codDisabled ? "opacity-40 cursor-not-allowed" : ""}`}
+                  } ${codDisabled ? "opacity-40 cursor-not-allowed" : ""}`}
               >
                 Cash on Delivery
               </button>
 
               <button
                 onClick={() => setPaymentMode("stripe")}
-                className={`flex-1 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition ${
-                  paymentMode === "stripe"
+                className={`flex-1 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition ${paymentMode === "stripe"
                     ? "bg-blue-600"
                     : "bg-white/10"
-                }`}
+                  }`}
               >
                 <FaStripe className="text-xl" />
                 Stripe

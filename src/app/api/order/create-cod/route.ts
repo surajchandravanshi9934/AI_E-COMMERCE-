@@ -70,17 +70,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ✅ CHECK PRODUCT EXISTS IN CART
-    const cartItem = user.cart.find(
-      (item: any) => item.product.toString() === productId
-    );
 
-    if (!cartItem) {
-      return NextResponse.json(
-        { message: "Product not found in cart" },
-        { status: 400 }
-      );
-    }
 
     // ✅ LOAD PRODUCT
     const product: any = await Product.findById(productId);

@@ -7,13 +7,19 @@ import {
   FaChevronRight,
   FaStar,
   FaShoppingCart,
+  FaBolt,
 } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { IProduct } from "@/models/product.model";
 import axios from "axios";
+import { toast } from "react-toastify";
+import { useDispatch } from "react-redux";
+import { AppDispatch } from "@/redux/store";
+import { fetchCartCount } from "@/redux/cartSlice";
 
 export default function UserProductCard({ product }: { product: IProduct }) {
   const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
 
   const images = [
     product.image1,
@@ -34,40 +40,40 @@ export default function UserProductCard({ product }: { product: IProduct }) {
   const prev = () =>
     setCurrent((prev) => (prev - 1 + images.length) % images.length);
 
- const handleAddToCart = async (e: React.MouseEvent) => {
-  e.stopPropagation(); // ✅ card click se bache
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.stopPropagation();
 
-  try {
-    const res = await axios.post("/api/cart/add", {
-      productId: product._id,
-      quantity: 1,
-    });
-
-    if (res.status === 200) {
-      alert("✅ Added to cart");
+    try {
+      const res = await axios.post("/api/cart/add", {
+        productId: product._id,
+        quantity: 1,
+      });
+      toast.success(res.data.message || "Added to cart successfully!");
+      dispatch(fetchCartCount());
+    } catch (err: any) {
+      console.log(err);
+      toast.error(
+        err?.response?.data?.message || "Add to cart failed ❌"
+      );
     }
-    router.push("/cart")
-  } catch (err: any) {
-    console.log(err);
-    alert(
-      err?.response?.data?.message || "Add to cart failed ❌"
-    );
-  }
-};
-  const reviews = product.reviews ?? [];
-const totalReviews = reviews.length;
+  };
 
-const avgRating =
-  totalReviews > 0
-    ? (
+  const handleBuyNow = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    router.push(`/checkout/${product._id}`);
+  };
+  const reviews = product.reviews ?? [];
+  const totalReviews = reviews.length;
+
+  const avgRating =
+    totalReviews > 0
+      ? (
         reviews.reduce(
           (sum: number, r: { rating: number }) => sum + r.rating,
           0
         ) / totalReviews
       ).toFixed(1)
-    : "0";
-
-
+      : "0";
 
   return (
     <motion.div
@@ -76,17 +82,18 @@ const avgRating =
       transition={{ duration: 0.6 }}
       viewport={{ once: true, amount: 0.2 }}
       whileHover={{ scale: 1.03 }}
-      className="bg-white rounded-xl shadow-md overflow-hidden border hover:shadow-xl transition cursor-pointer"
+      className="bg-[#111] rounded-2xl shadow-lg hover:shadow-blue-900/20 overflow-hidden border border-white/10 cursor-pointer group"
       onClick={openProduct}
     >
       {/* ================= ✅ FIXED IMAGE BOX ================= */}
-      <div className="relative w-full h-[220px] bg-gray-100 overflow-hidden flex items-center justify-center">
+      <div className="relative w-full h-[220px] bg-[#0a0a0a] overflow-hidden flex items-center justify-center border-b border-white/5 group-hover:border-blue-500/30 transition-colors">
 
-        {/* ✅ IMAGE FIXED – SIZE CHANGE NAHI HOGA */}
+        {/* ✅ IMAGE FIXED */}
         <div className="relative w-[90%] h-[90%]">
           <Image
             src={images[current]}
             alt={product.title}
+            loading="lazy"
             fill
             className="object-contain"
             sizes="(max-width: 768px) 100vw, 300px"
@@ -99,7 +106,7 @@ const avgRating =
             e.stopPropagation();
             prev();
           }}
-          className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 p-2 rounded-full text-white z-10"
+          className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/80 p-2 rounded-full text-white z-10 opacity-0 group-hover:opacity-100 transition-all border border-white/10"
         >
           <FaChevronLeft size={14} />
         </button>
@@ -110,7 +117,7 @@ const avgRating =
             e.stopPropagation();
             next();
           }}
-          className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 p-2 rounded-full text-white z-10"
+          className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/80 p-2 rounded-full text-white z-10 opacity-0 group-hover:opacity-100 transition-all border border-white/10"
         >
           <FaChevronRight size={14} />
         </button>
@@ -120,62 +127,63 @@ const avgRating =
           {images.map((_, i) => (
             <span
               key={i}
-              className={`w-2 h-2 rounded-full ${
-                current === i ? "bg-black" : "bg-black/40"
-              }`}
+              className={`w-1.5 h-1.5 rounded-full transition-all ${current === i ? "bg-white w-3" : "bg-white/40"
+                }`}
             />
           ))}
         </div>
       </div>
 
       {/* ================= PRODUCT INFO ================= */}
-      <div className="p-4 space-y-2">
-        <h3 className="font-semibold text-sm text-black line-clamp-1">
-          {product.title}
-        </h3>
+      <div className="p-4 space-y-2.5">
+        <div>
+          <h3 className="font-semibold text-sm text-gray-200 line-clamp-2 group-hover:text-blue-400 transition-colors leading-tight">
+            {product.title}
+          </h3>
+          <p className="text-xs text-gray-500 mt-1 capitalize">
+            {product.category}
+          </p>
+        </div>
 
-        <p className="text-xs text-gray-500">
-          {product.category}
-        </p>
-
-        <p className="font-bold text-lg text-green-600">
-          ₹ {product.price}
-        </p>
-
-        {/* ⭐ REVIEWS */}
-        <div className="flex items-center gap-1 text-yellow-500 text-sm">
-  {[1, 2, 3, 4, 5].map((i) =>
-    i <= Math.round(Number(avgRating)) ? (
-      <FaStar key={i} />
-    ) : (
-      <FaStar key={i} className="opacity-30" />
-    )
-  )}
-  <span className="text-gray-500 text-xs ml-1">
-    {avgRating} ({totalReviews})
-  </span>
-</div>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2">
+          <p className="font-bold text-base sm:text-lg text-white">
+            ₹{product.price}
+          </p>
+          {/* ⭐ REVIEWS */}
+          <div className="flex items-center gap-1 text-yellow-500 text-xs bg-white/5 px-2 py-1 rounded-full border border-white/5 w-fit">
+            <FaStar size={10} />
+            <span className="text-gray-300 font-medium">{avgRating}</span>
+            <span className="text-gray-600">({totalReviews})</span>
+          </div>
+        </div>
 
 
         {/* 🏪 VENDOR */}
-        <p className="text-xs text-gray-500">
-          Sold by:{" "}
-          <span className="font-medium text-gray-700">
-            {product.vendor?.shopName || "Unknown Shop"}
-          </span>
-        </p>
 
-        {/* ✅ ADD TO CART */}
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={handleAddToCart}
-          className="w-full mt-3 bg-black text-white py-2 rounded-lg flex items-center 
-                     justify-center gap-2 hover:bg-gray-900 transition"
-        >
-          <FaShoppingCart size={14} />
-          Add to Cart
-        </motion.button>
+        {/* ✅ BUTTONS */}
+        <div className="grid grid-cols-2 gap-2 pt-2">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleAddToCart}
+            className="bg-white/10 hover:bg-white/20 text-white py-2.5 rounded-lg flex items-center 
+                       justify-center gap-1 sm:gap-1.5 transition text-[10px] sm:text-xs font-medium border border-white/10"
+          >
+            <FaShoppingCart size={11} className="sm:w-3 sm:h-3" />
+            <span>Add</span>
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleBuyNow}
+            className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white py-2.5 rounded-lg flex items-center 
+                       justify-center gap-1 sm:gap-1.5 transition text-[10px] sm:text-xs font-bold shadow-lg shadow-blue-900/40"
+          >
+            <FaBolt size={11} className="sm:w-3 sm:h-3" />
+            <span>Buy Now</span>
+          </motion.button>
+        </div>
       </div>
     </motion.div>
   );

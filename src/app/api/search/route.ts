@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
 
     /* ✅ CATEGORY FILTER */
     if (category && category !== "all") {
-      filter.category = category;
+      filter.category = { $regex: new RegExp(`^${category}$`, "i") };
     }
 
     /* ✅ SHOP FILTER */

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 
 import "./globals.css";
+import 'react-toastify/dist/ReactToastify.css';
+import { ToastContainer } from "react-toastify";
 
 import Provider from "@/Provider";
 import StoreProvider from "@/redux/StoreProvider";
@@ -22,15 +24,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="w-full min-h-screen bg-linear-to-b from-black"> 
-       
-       <Provider>
-        <StoreProvider>
-          <InitUser/>
-        {children}
-        </StoreProvider>
+      <body className="w-full min-h-screen bg-linear-to-b from-black">
+
+        <Provider>
+          <StoreProvider>
+            <InitUser />
+            <ToastContainer position="bottom-right" theme="dark" />
+            {children}
+          </StoreProvider>
         </Provider>
-       
+
       </body>
     </html>
   );

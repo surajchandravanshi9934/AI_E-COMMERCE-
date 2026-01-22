@@ -44,7 +44,7 @@ export default function Slider() {
     return () => clearInterval(interval);
   }, []);
 
- 
+
 
   return (
     <div className="relative w-full min-h-[90vh] mt-0 overflow-hidden bg-black text-white md:mt-[60px] pt-0 top-0">
@@ -99,7 +99,7 @@ export default function Slider() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg shadow-lg transition"
-              onClick={()=>router.push("/category")}
+              onClick={() => router.push("/category")}
             >
               {slides[current].button}
             </motion.button>
@@ -107,30 +107,23 @@ export default function Slider() {
         </motion.div>
       </AnimatePresence>
 
-      {/* Thumbnail navigation */}
-      <div className="absolute bottom-6 right-6  flex gap-4">
-        {slides.map((slide, index) => (
+      {/* Navigation Dots */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3">
+        {slides.map((_, index) => (
           <motion.div
             key={index}
             onClick={() => setCurrent(index)}
-            whileHover={{ scale: 1.1 }}
-            className={`relative w-20 h-12 cursor-pointer rounded-lg overflow-hidden border-2 transition-all duration-300 ${index === current
-                ? "border-gary-100 shadow-[0_0_10px_rgba(59,130,246,0.8)]"
-                : "border-gray-500 hover:border-blue-400"
+            whileHover={{ scale: 1.2 }}
+            className={`w-3 h-3 rounded-full cursor-pointer transition-all duration-300 ${index === current
+                ? "bg-blue-500 w-8"
+                : "bg-gray-400 hover:bg-white"
               }`}
-          >
-            <Image
-              src={slide.image}
-              alt={slide.title}
-              fill
-              className="object-cover opacity-90"
-            />
-          </motion.div>
+          />
         ))}
       </div>
 
 
-     
+
     </div>
   );
 }

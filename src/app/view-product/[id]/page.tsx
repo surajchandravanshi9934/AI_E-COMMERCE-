@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/redux/store";
-import { FaStar, FaRegStar, FaOpencart, FaMoneyBillWave, FaTruck, FaShieldAlt, FaUndo } from "react-icons/fa";
+import { FaStar, FaRegStar, FaOpencart, FaMoneyBillWave, FaTruck, FaShieldAlt, FaUndo, FaHeart, FaRegHeart } from "react-icons/fa";
 import { IoMdCheckmarkCircleOutline } from "react-icons/io";
 import { AiOutlineUser, AiOutlineCamera } from "react-icons/ai";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,6 +13,7 @@ import UserProductCard from "@/component/userProductCard";
 import { IProduct } from "@/models/product.model";
 import getAllProductsData from "@/hooks/getAllProductsData";
 import { fetchCartCount } from "@/redux/cartSlice";
+import { toggleWishlistItem, fetchWishlistData } from "@/redux/wishlistSlice";
 import axios from "axios";
 import { ClipLoader } from "react-spinners";
 import { toast } from "react-toastify";
@@ -30,14 +31,21 @@ export default function ProductViewPage() {
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [addToCartLoading, setAddToCartLoading] = useState(false);
+  const { userData } = useSelector((state: RootState) => state.user);
 
   const { allProductsData } = useSelector((state: RootState) => state.vendor);
+  const wishlistItems = useSelector((state: RootState) => state.wishlist.items);
   const [activeImage, setActiveImage] = useState(0);
 
-  // ✅ DIRECT FIND
   const product: IProduct | undefined = allProductsData?.find(
     (p: IProduct) => String(p._id) === String(id)
   );
+
+  useEffect(() => {
+    if (userData?.role === "user") {
+      dispatch(fetchWishlistData());
+    }
+  }, [userData, dispatch]);
 
   // ✅ Loading State
   if (!allProductsData || allProductsData.length === 0) {
@@ -218,16 +226,50 @@ export default function ProductViewPage() {
             <div className="flex flex-col sm:flex-row gap-4 mb-8">
               <button
                 onClick={handleBuyNow}
-                className="flex-1 bg-white text-black font-bold py-4 rounded-xl hover:bg-gray-200 transition text-lg flex items-center justify-center gap-2"
+                className="flex-[2] bg-white text-black font-bold py-4 rounded-xl hover:bg-gray-200 transition text-lg flex items-center justify-center gap-2"
               >
                 <FaMoneyBillWave /> Buy Now
               </button>
               <button
                 onClick={handleAddToCart}
                 disabled={addToCartLoading || product.stock <= 0}
-                className="flex-1 bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition text-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-[2] bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition text-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {addToCartLoading ? <ClipLoader size={24} color="white" /> : <><FaOpencart /> Add to Cart</>}
+              </button>
+
+              {/* Wishlist Toggle Button */}
+              <button
+                onClick={async () => {
+                  if (!userData) {
+                    toast.warn("Please login to manage wishlist 🔑");
+                    return router.push("/login");
+                  }
+
+                  const isInWishlist = wishlistItems.includes(String(product._id));
+                  try {
+                    const endpoint = isInWishlist ? '/api/wishlist/remove' : '/api/wishlist/add';
+                    const res = await axios.post(endpoint, { productId: product._id });
+                    if (res.data.success) {
+                      dispatch(toggleWishlistItem(String(product._id)));
+                      toast.success(isInWishlist ? "Removed from Wishlist" : "Added to Wishlist");
+                    }
+                  } catch (err) {
+                    toast.error("Failed to update wishlist");
+                  }
+                }}
+                className={`flex-1 flex items-center justify-center rounded-xl border border-white/10 transition-all ${wishlistItems.includes(String(product._id)) ? 'bg-red-500/20 text-red-500 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.2)]' : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'}`}
+              >
+                <motion.div
+                  whileTap={{ scale: 0.8 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                >
+                  {wishlistItems.includes(String(product._id)) ? (
+                    <FaHeart size={24} className="text-red-500" />
+                  ) : (
+                    <FaRegHeart size={24} />
+                  )}
+                </motion.div>
               </button>
             </div>
 

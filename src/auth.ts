@@ -52,9 +52,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                         name:user.name,
                         email:user.email,
                         image:user.image
-
-
                     })
+                } else if (user.image && dbUser.image !== user.image) {
+                    // Update image if it changed (e.g. user updated Google profile pic)
+                    dbUser.image = user.image
+                    await dbUser.save()
                 }
                 user.id = dbUser._id.toString()
                 user.role = dbUser.role.toString()
@@ -65,20 +67,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         jwt({token,user}) {
             if(user){
-                token.id = user.id,
-                token.name = user.name,
-                token.email = user.email,
+                token.id = user.id
+                token.name = user.name
+                token.email = user.email
                 token.role = user.role
+                token.image = user.image ?? token.picture ?? null
             }
             return token
             
         },
         session({session,token}){
             if(session.user){
-                session.user.id = token.id as string,
-                session.user.name = token.name as string,
-                session.user.email = token.email as string,
+                session.user.id = token.id as string
+                session.user.name = token.name as string
+                session.user.email = token.email as string
                 session.user.role = token.role as string
+                session.user.image = (token.image as string) ?? null
             }
             return session
         }

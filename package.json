@@ -10,8 +10,9 @@
   },
   "dependencies": {
     "@google/genai": "^1.33.0",
+    "@google/generative-ai": "^0.24.1",
     "@reduxjs/toolkit": "^2.11.0",
-    "axios": "^1.13.2",
+    "axios": "1.13.2",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.8.0",
     "framer-motion": "^12.23.24",
@@ -38,5 +39,12 @@
     "eslint-config-next": "16.0.1",
     "tailwindcss": "^4",
     "typescript": "^5"
+  }
+  ,
+  "overrides": {
+    "axios": "1.13.2"
+  },
+  "resolutions": {
+    "axios": "1.13.2"
   }
 }

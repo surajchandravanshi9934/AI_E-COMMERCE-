@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { IProduct } from "./product.model";
 
- export interface IUser {
+export interface IUser {
   _id?: mongoose.Types.ObjectId;
 
   name: string;
@@ -27,6 +27,7 @@ import { IProduct } from "./product.model";
   /* -------------------- PRODUCT & ORDER REFERENCES -------------------- */
   vendorProducts?: IProduct[]; // ✅ Products created by vendor
   orders?: mongoose.Types.ObjectId[];         // ✅ Orders placed by user
+  wishlist?: mongoose.Types.ObjectId[];       // ✅ Wishlist products
 
   /* -------------------- CART DATA -------------------- */
   cart?: {
@@ -34,7 +35,7 @@ import { IProduct } from "./product.model";
     quantity: number;
   }[];
 
-   chats?: {
+  chats?: {
     with: mongoose.Types.ObjectId; // kis user ke saath chat
     messages: {
       sender: mongoose.Types.ObjectId; // kisne message bheja
@@ -100,6 +101,14 @@ const userSchema = new mongoose.Schema<IUser>(
       },
     ],
 
+    /* ---------------- WISHLIST ---------------- */
+    wishlist: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Product",
+      },
+    ],
+
     /* ---------------- CART ---------------- */
     cart: [
       {
@@ -111,7 +120,7 @@ const userSchema = new mongoose.Schema<IUser>(
       },
     ],
 
-      chats: [
+    chats: [
       {
         with: {
           type: mongoose.Schema.Types.ObjectId,

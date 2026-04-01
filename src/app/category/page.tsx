@@ -16,6 +16,7 @@ import {
   FaCouch,
   FaPumpSoap,
   FaBaby,
+  FaBolt,
   FaCar,
   FaBasketballBall,
   FaBook,
@@ -45,13 +46,13 @@ const categoryList = [
   { label: "Fashion & Lifestyle", display: "Fashion & Lifestyle" },
   { label: "Electronics & Gadgets", display: "Electronics & Gadgets" },
   { label: "Home & Living", display: "Home" },
-  { label: "Beauty", display: "Beauty" },
-  { label: "Kids & Baby", display: "Kids" },
+  { label: "Beauty & Personal Care", display: "Beauty" },
+  { label: "Toys, Kids & Baby", display: "Kids" },
   { label: "Food & Grocery", display: "Food & Grocery" },
-  { label: "Sports", display: "Sports" },
-  { label: "Automotive", display: "Auto" },
-  { label: "Gifting", display: "Gifts" },
-  { label: "Books", display: "Books" },
+  { label: "Sports & Fitness", display: "Sports" },
+  { label: "Automotive Accessories", display: "Auto" },
+  { label: "Gifting & Handcrafts", display: "Gifts" },
+  { label: "Books & Stationery", display: "Books" },
 ];
 
 export default function CategoriesPage() {
@@ -78,13 +79,21 @@ export default function CategoriesPage() {
   const [loading, setLoading] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
+  // AI Search Modal States
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [aiQuery, setAiQuery] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResults, setAiResults] = useState<any>(null);
+
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const cat = params.get("category");
+    const q = params.get("search");
     if (cat) setSelectedCategory(cat);
+    if (q) setSearch(q);
     setIsReady(true);
-  }, []);
+  }, [router]); // Re-run when router/URL changes
 
   // Handle category change - updates both state and URL
   const handleCategoryChange = (category: string) => {
@@ -168,6 +177,35 @@ export default function CategoriesPage() {
     setDisplayProducts(result);
   }, [apiProducts, search, selectedShop, minPriceInput, maxPriceInput, minRating, sortBy]);
 
+  // AI Search Handler
+  const handleAISearch = async () => {
+    if (!aiQuery.trim()) return;
+
+    setAiLoading(true);
+    setAiResults(null);
+
+    try {
+      const res = await fetch("/api/ai-search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: aiQuery }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setAiResults(data);
+      } else {
+        alert(data.error || "AI Search failed");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to perform AI search");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const activeFiltersCount = (minPriceInput !== "" ? 1 : 0) + (maxPriceInput !== "" ? 1 : 0) + (minRating > 0 ? 1 : 0);
 
   return (
@@ -207,10 +245,14 @@ export default function CategoriesPage() {
                 className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-black border border-white/10 focus:outline-none focus:border-blue-500 text-sm text-white placeholder-gray-500"
               />
             </div>
-            {/* AI Search Button */}
-            <button className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-purple-900/30 transition-all hover:scale-105 active:scale-95">
-              <FaMagic />
-              <span>AI Search</span>
+            {/* AI Search Button - Redesigned to match image */}
+            <button
+              onClick={() => setShowAIModal(true)}
+              className="group relative flex items-center gap-2 bg-[#0a0a0a] border border-purple-500/30 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-[0_0_15px_rgba(168,85,247,0.15)] transition-all hover:border-purple-500/60 hover:shadow-[0_0_25px_rgba(168,85,247,0.3)] active:scale-95 overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-blue-600/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <FaMagic className="text-purple-400 group-hover:scale-110 transition-transform" />
+              <span className="relative z-10 tracking-tight">AI Search</span>
             </button>
           </div>
         </div>
@@ -325,6 +367,180 @@ export default function CategoriesPage() {
         )}
 
       </div>
+
+      {/* AI Search Modal - Premium Redesign */}
+      <AnimatePresence>
+        {showAIModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowAIModal(false)}
+              className="fixed inset-0 bg-black/90 backdrop-blur-md z-[60]"
+            />
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed inset-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-5xl md:h-[85vh] bg-[#0a0a0a] border border-white/5 rounded-[2.5rem] shadow-[0_0_50px_rgba(0,0,0,0.5)] z-[70] overflow-hidden flex flex-col"
+            >
+              {/* Decorative background glow */}
+              <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-600/10 blur-[120px] rounded-full" />
+              <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-600/10 blur-[120px] rounded-full" />
+
+              {/* Header */}
+              <div className="relative border-b border-white/5 p-8 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 p-[1px]">
+                    <div className="w-full h-full rounded-2xl bg-[#0a0a0a] flex items-center justify-center">
+                      <FaMagic className="text-purple-400 text-2xl" />
+                    </div>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-500">
+                      MegaMart AI Search
+                    </h2>
+                    <p className="text-xs text-gray-500 font-medium tracking-widest uppercase">
+                      Powered by Advanced Intelligence
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowAIModal(false)}
+                  className="w-12 h-12 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all hover:rotate-90 group"
+                >
+                  <MdClear className="text-gray-400 text-2xl group-hover:text-white" />
+                </button>
+              </div>
+
+              {/* Main Search Area */}
+              <div className="relative p-8 pb-0">
+                <div className="relative group">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-purple-600/20 to-blue-600/20 rounded-2xl blur opacity-25 group-focus-within:opacity-100 transition duration-1000 group-focus-within:duration-200" />
+                  <div className="relative flex gap-3">
+                    <div className="relative flex-1">
+                      <FaSearch className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" />
+                      <input
+                        value={aiQuery}
+                        onChange={(e) => setAiQuery(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleAISearch()}
+                        placeholder='Ask AI: "Find me some stylish party wear within 5000"'
+                        className="w-full pl-14 pr-6 py-5 rounded-2xl bg-black border border-white/10 focus:outline-none focus:border-purple-500/50 text-lg text-white placeholder-gray-600 transition-all font-light"
+                      />
+                    </div>
+                    <button
+                      onClick={handleAISearch}
+                      disabled={aiLoading || !aiQuery.trim()}
+                      className="px-10 rounded-2xl bg-white text-black font-bold hover:bg-gray-200 transition-all disabled:opacity-30 disabled:cursor-not-allowed text-sm uppercase tracking-widest"
+                    >
+                      {aiLoading ? "Thinking..." : "Search"}
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {['Latest Tech', 'Winter Fashion', 'Premium Decor', 'Gifts under 2000'].map(tag => (
+                    <button
+                      key={tag}
+                      onClick={() => { setAiQuery(tag); }}
+                      className="text-[10px] font-bold uppercase tracking-wider text-gray-500 hover:text-purple-400 bg-white/5 px-3 py-1.5 rounded-full border border-white/5 hover:border-purple-500/30 transition-all"
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Scrollable Results Area */}
+              <div className="flex-1 overflow-y-auto p-8 pt-6 custom-scrollbar">
+                {aiLoading && (
+                  <div className="h-full flex flex-col items-center justify-center space-y-6">
+                    <div className="relative w-20 h-20">
+                      <div className="absolute inset-0 border-4 border-purple-600/20 rounded-full" />
+                      <div className="absolute inset-0 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                    </div>
+                    <div className="text-center">
+                      <h4 className="text-xl font-medium text-white mb-2">Analyzing your request</h4>
+                      <p className="text-gray-500 max-w-xs animate-pulse">Our AI is scanning through the collection to find the perfect matches...</p>
+                    </div>
+                  </div>
+                )}
+
+                {aiResults && (
+                  <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    {/* AI Insight Section */}
+                    <div className="relative p-6 rounded-[2rem] bg-gradient-to-br from-purple-900/10 to-transparent border border-purple-500/10 overflow-hidden">
+                      <div className="absolute top-0 right-0 p-4">
+                        <div className="text-[10px] font-bold text-purple-500/50 uppercase tracking-[0.2em]">AI Response</div>
+                      </div>
+                      <div className="flex items-start gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-purple-600/20 flex items-center justify-center shrink-0">
+                          <FaMagic className="text-purple-400" />
+                        </div>
+                        <div className="space-y-2">
+                          <p className="text-lg font-medium text-purple-100">{aiResults.intent}</p>
+                          {aiResults.explanation && (
+                            <p className="text-sm text-gray-400 leading-relaxed font-light italic">"{aiResults.explanation}"</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Results Grid */}
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between px-2">
+                        <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500">
+                          Curated Selection ({aiResults.products?.length || 0})
+                        </h3>
+                      </div>
+
+                      {aiResults.products && aiResults.products.length > 0 ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+                          {aiResults.products.map((product: any) => (
+                            <div key={product._id} className="animate-in fade-in zoom-in-95 duration-500">
+                              <UserProductCard product={product} />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="py-20 text-center">
+                          <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <FaSearch className="text-gray-600 text-3xl" />
+                          </div>
+                          <h4 className="text-xl font-medium text-white mb-2">No matching products</h4>
+                          <p className="text-gray-500">Try adjusting your description or searching for something else.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {!aiLoading && !aiResults && (
+                  <div className="h-full flex flex-col items-center justify-center text-center">
+                    <div className="grid grid-cols-2 gap-4 max-w-2xl">
+                      <div className="p-8 rounded-[2.5rem] bg-white/5 border border-white/5 hover:border-purple-500/20 transition-all cursor-default text-left group">
+                        <div className="w-12 h-12 rounded-2xl bg-purple-600/20 flex items-center justify-center mb-6 text-purple-400 group-hover:scale-110 transition-transform">
+                          <FaMagic size={20} />
+                        </div>
+                        <h4 className="text-lg font-semibold text-white mb-3">Natural Language</h4>
+                        <p className="text-sm text-gray-500 leading-relaxed">Search like you're talking to a personal shopper. Just describe what's on your mind.</p>
+                      </div>
+                      <div className="p-8 rounded-[2.5rem] bg-white/5 border border-white/5 hover:border-blue-500/20 transition-all cursor-default text-left group">
+                        <div className="w-12 h-12 rounded-2xl bg-blue-600/20 flex items-center justify-center mb-6 text-blue-400 group-hover:scale-110 transition-transform">
+                          <FaBolt size={20} />
+                        </div>
+                        <h4 className="text-lg font-semibold text-white mb-3">Instant Insights</h4>
+                        <p className="text-sm text-gray-500 leading-relaxed">Get curated results and explanations why they match your specific lifestyle and needs.</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

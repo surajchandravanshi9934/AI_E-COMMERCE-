@@ -3,12 +3,15 @@ import userSlice from "./userSlice"
 import vendorSlice from "./vendorSlice"
 import orderSlice from "./orderSlice"
 import cartSlice from "./cartSlice"
+import wishlistSlice from "./wishlistSlice"
+
 export const store = configureStore({
     reducer: {
         user: userSlice,
         vendor: vendorSlice,
         order: orderSlice,
-        cart: cartSlice
+        cart: cartSlice,
+        wishlist: wishlistSlice
     }
 })
 

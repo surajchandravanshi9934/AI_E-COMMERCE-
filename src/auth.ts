@@ -15,7 +15,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             async authorize(credentials, request) {
 
                 await connectDb()
-                const email = credentials.email as string
+                const email = (credentials.email as string).toLowerCase().trim()
                 const password = credentials.password as string
                 console.log(email)
                 const user = await User.findOne({email})
@@ -95,7 +95,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
     session:{
         strategy:"jwt",
-        maxAge:10*24*60*60*1000
+        maxAge:10*24*60*60
     },
     secret:process.env.AUTH_SECRET
 
